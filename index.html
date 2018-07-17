@@ -2,71 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hello</title>
-    <style>
-        body {
-            margin: 100px auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        div {
-            color: blue;
-            font-size: 16pt;
-        }
-        .field {
-            height: 80px;
-            margin: 50px auto;
-        }
-        input {
-            height: 30%;
-        }
-        .button {
-            background-color: blue;
-
-            width: 100px;
-            color: aliceblue;
-        }
-    </style>
+    <title>chatIO</title>
+    <link rel="stylesheet" type="text/css" href="app.css">
 </head>
 <body>
-    <div>
-        Own chat!
+    <div class="container">
+
+        <div id="nameWrapper">
+            <h2>Chat</h2>
+            <p>Create Username</p>
+
+            <form id="userNameForm">
+                <input type="text" size="35" id="username">
+                <input type="password" size="35" id="password">
+                <input type="submit" value="Submit">
+            </form>
+            <div id="error"></div>
+        </div>
+
+        <div id="mainWrapper">
+            <h2>Chat</h2>
+            <div id="chatWrapper">
+                <div id="chatWindow">
+                    <form id="messageForm">
+                        <input type="text" size="35" id="message" placeholder="Your message...">
+                        <input type="submit" value="Submit">
+                    </form>
+                    <div id="messages"></div>
+                </div>
+                <div id="userWrapper">
+                    <ul id="users"></ul>
+                </div>
+            </div>
+        </div>
+
     </div>
-    <form class="field">
-   <input type="text" name="message"/>
-    <input type="submit" class="button" value="SEND"/>
-    </form>
-    <ul id="messages">
-    </ul>
 
-<script>
-    publish.onsubmit = function () {
-        var xhr = new XMLHttpRequest();
-        xhr.open("POST", '/publish', true);
-        xhr.send(JSON.stringify({message: this.elements.message.value}));
-        this.elements.message.value = '';
-        return false;
-    };
-
-    subscribe();
-
-    function subscribe() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', '/subscribe', true);
-        xhr.onload = function () {
-            var li = document.createElement('li');
-            li.textContent = this.responseText;
-            messages.appendChild(li);
-
-            subscribe();
-        };
-        xhr.onerror = xhr.onabort = function () {
-            setTimeout(subscribe, 500);
-        };
-
-        xhr.send('');
-    }
-</script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="client.js"></script>
 </body>
 </html>
