@@ -3,6 +3,9 @@ const express = require('express'),
     server = require('http').createServer(app),
     io = require('socket.io').listen(server),
     bcrypt = require('bcryptjs');
+
+var saltRounds = bcrypt.genSaltSync(10);
+
     // passport = require('passport'),
     // LocalStrategy = require('passport-local').Strategy,
     // session = require('express-session'),
@@ -47,23 +50,51 @@ app.use(express.static(__dirname));
 io.sockets.on('connection', function (socket) {
     console.log('Socket connected');
 
-    socket.on('new user', function (data, callback) {
-        if (usernames.indexOf(data.user) !== -1 || !data.user || !data.pass) {
-            callback(false);
-        }
-        else {
-            callback(true);
-            socket.username = data.user;
-            socket.password = data.pass;
-            usernames.push(socket.username);
-            updateUsernames();
-            socket.broadcast.emit('new message', {msg: "joined", user: socket.username});
-            bcrypt.hash(socket.password, saltRounds, function(err, hash){
-                if (err) throw err;
-                db.query('INSERT INTO users (username, password) VALUES (?, ?)', [socket.username, hash] );
-            });
+    socket.on('new user', function (data) {
+        db.query('SELECT * FROM users', function(err, res) {
+            if (err) throw err;
 
-        }
+            if (!data.user) {
+                io.sockets.emit('error', {msg: "Unavailable username"});
+            }
+            else if (!data.pass) {
+                io.sockets.emit('error', {msg: "Enter password"});
+            }
+            else {
+                var userArray = [];
+                Object.keys(res).forEach((key) => {
+                    userArray.push(res[key].username);
+                });
+                socket.username = data.user;
+                socket.password = data.pass;
+                let index = userArray.indexOf(data.user);
+                if (index === -1) {
+                    io.sockets.emit('user', {user: socket.username});
+                    usernames.push(socket.username);
+                    updateUsernames();
+                    socket.broadcast.emit('new message', {msg: "joined", user: socket.username});
+
+                    bcrypt.hash(socket.password, saltRounds, function (err, hash) {
+                        if (err) throw err;
+                        db.query('INSERT INTO users (username, password) VALUES (?, ?)', [socket.username, hash]);
+                    });
+                }
+                else {
+                    bcrypt.compare(socket.password, res[index].password)
+                        .then( (res) => {
+                         if(res) {
+                             io.sockets.emit('user', {user: socket.username});
+                             usernames.push(socket.username);
+                             updateUsernames();
+                             socket.broadcast.emit('new message', {msg: "joined", user: socket.username});
+                         }
+                         else {
+                             io.sockets.emit('error', {msg: "Wrong password"});
+                         }
+                    });
+                }
+            }
+        });
     });
 
     function updateUsernames() {
@@ -81,7 +112,6 @@ io.sockets.on('connection', function (socket) {
         io.sockets.emit('new message', {msg: "leaved the chat", user: socket.username});
         usernames.splice(usernames.indexOf(socket.username), 1);
         updateUsernames();
-        db.query('DELETE FROM users WHERE username = ?', socket.username);
     });
 
 });

@@ -1,5 +1,6 @@
 
 $(function () {
+
     var socket = io.connect();
     var $messageForm = $('#messageForm');
     var $message = $('#message');
@@ -12,23 +13,23 @@ $(function () {
     var $users = $('#users');
     var $error = $('#error');
 
-
     $userNameForm.submit(function (e) {
         e.preventDefault();
-        console.log($username.val(), $password.val());
         socket.emit('new user', {
             user: $username.val(),
             pass: $password.val()
-        },function (data) {
-            if (data) {
-                $('#nameWrapper').hide();
-                $('#mainWrapper').show();
-            }
-            else {
-                $error.html('Username is unavailable');
-            }
         });
+    });
+
+    socket.on('user', function(data) {
+        $('#nameWrapper').hide();
+        $('#mainWrapper').show();
+    });
+
+    socket.on('error', function(data){
         $username.val('');
+        $password.val('');
+        $error.html(data.msg);
     });
 
     $username.focus(function () {
